@@ -1,4 +1,5 @@
 Flask<=2.0.3
-Pillow<=8.4.0
+Pillow
 pillow-avif-plugin
+pillow-heif
 gunicorn<=20.1.0
