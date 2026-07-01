@@ -237,7 +237,7 @@
 
         <div class="form-group">
             <label>選擇圖片檔案 (支援多選)</label>
-            <label for="fileInput" class="file-upload-btn">
+            <label for="fileInput" class="file-upload-btn" id="dropZone">
                 點擊或拖曳檔案至此
             </label>
             <input type="file" id="fileInput" multiple accept="image/*" />
@@ -264,6 +264,7 @@
 
     <script>
         const fileInput = document.getElementById('fileInput');
+        const dropZone = document.getElementById('dropZone');
         const imageList = document.getElementById('imageList');
         const zipFileNameInput = document.getElementById('zipFileNameInput');
         const qualityInput = document.getElementById('qualityInput');
@@ -271,6 +272,42 @@
         const statusMessage = document.getElementById('statusMessage');
 
         let selectedFiles = [];
+
+        // 避免瀏覽器預設的拖曳開啟檔案行為
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+            document.body.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        // 增加拖曳時的視覺回饋
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => {
+                dropZone.style.borderColor = 'var(--primary)';
+                dropZone.style.background = 'rgba(0, 113, 227, 0.05)';
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => {
+                dropZone.style.borderColor = '';
+                dropZone.style.background = '';
+            }, false);
+        });
+
+        // 處理拖曳放下的檔案
+        dropZone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const newFiles = Array.from(dt.files).filter(file => file.type.startsWith('image/'));
+            if (newFiles.length > 0) {
+                selectedFiles = [...selectedFiles, ...newFiles];
+                renderPreviews();
+            }
+        });
 
         fileInput.addEventListener('change', (e) => {
             const newFiles = Array.from(e.target.files);
