@@ -10,8 +10,6 @@ WORKDIR /app
 
 COPY requirements.txt .
 
-# Use standard requirements without limiting versions for Python 3.9
-RUN echo "Flask\nPillow\npillow-avif-plugin\npillow-heif\ngunicorn" > requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
