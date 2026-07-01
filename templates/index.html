@@ -7,6 +7,8 @@
     <!-- 設定網頁 Favicon -->
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <style>
         :root {
             --primary: #0071e3;
@@ -230,6 +232,34 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+
+        .progress-container {
+            display: none;
+            margin-top: 16px;
+        }
+        
+        .progress-text {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            text-align: center;
+        }
+        
+        .progress-bar-bg {
+            width: 100%;
+            height: 8px;
+            background-color: var(--border);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .progress-bar-fill {
+            height: 100%;
+            background-color: var(--primary);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
     </style>
 </head>
 <body>
@@ -239,7 +269,7 @@
 
         <div class="form-group">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <label style="margin-bottom: 0;">選擇圖片檔案 <span style="color: var(--text-secondary); font-size: 13px; font-weight: normal;">(支援多選，總容量上限 50MB)</span></label>
+                <label style="margin-bottom: 0;">選擇圖片檔案 <span style="color: var(--text-secondary); font-size: 13px; font-weight: normal;">(支援多選，已解除 50MB 限制)</span></label>
                 <button type="button" id="clearAllBtn" style="background: none; border: none; color: var(--danger); cursor: pointer; font-size: 13px; font-weight: 500; padding: 0; display: none;">全部清除</button>
             </div>
             <label for="fileInput" class="file-upload-btn" id="dropZone">
@@ -263,6 +293,13 @@
         </div>
 
         <button id="convertButton" class="submit-btn">轉換並下載 ZIP</button>
+
+        <div id="progressContainer" class="progress-container">
+            <div id="progressText" class="progress-text">準備中...</div>
+            <div class="progress-bar-bg">
+                <div id="progressBarFill" class="progress-bar-fill"></div>
+            </div>
+        </div>
 
         <div id="statusMessage" class="status"></div>
     </div>
@@ -372,71 +409,80 @@
                 return;
             }
 
-            // 檢查總容量是否超過 50MB
-            const totalSize = selectedFiles.reduce((sum, file) => sum + file.size, 0);
-            const maxSize = 50 * 1024 * 1024; // 50MB
-            if (totalSize > maxSize) {
-                showMessage(`總容量超過限制！目前大小為 ${(totalSize / 1024 / 1024).toFixed(1)} MB，請刪除部分圖片使其小於 50 MB。`, 'error');
-                return;
-            }
+            // 移除 50MB 限制，因為已改為前端單獨打包
 
             convertButton.disabled = true;
             convertButton.innerHTML = '<span class="loader"></span> 處理中...';
             showMessage('', ''); // Clear message
 
-            const formData = new FormData();
-            selectedFiles.forEach(file => {
-                formData.append('files', file);
-            });
-            formData.append('quality', qualityInput.value);
-            formData.append('zipFilename', zipFileNameInput.value);
+            const progressContainer = document.getElementById('progressContainer');
+            const progressText = document.getElementById('progressText');
+            const progressBarFill = document.getElementById('progressBarFill');
+            progressContainer.style.display = 'block';
+            
+            const zip = new JSZip();
+            let successCount = 0;
+            let failCount = 0;
 
             try {
-                const response = await fetch('/convert', {
-                    method: 'POST',
-                    body: formData
-                });
+                for (let i = 0; i < selectedFiles.length; i++) {
+                    const file = selectedFiles[i];
+                    progressText.innerText = `正在轉換 (${i + 1} / ${selectedFiles.length}): ${file.name}`;
+                    progressBarFill.style.width = `${((i) / selectedFiles.length) * 100}%`;
+                    
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('quality', qualityInput.value);
 
-                if (!response.ok) {
-                    let errorMessage = '轉換失敗';
-                    try {
-                        const errorData = await response.json();
-                        errorMessage = errorData.error || errorMessage;
-                    } catch (e) {
-                        errorMessage = `伺服器超時或發生異常 (${response.status} ${response.statusText})`;
+                    const response = await fetch('/convert_single', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        failCount++;
+                        continue;
                     }
-                    throw new Error(errorMessage);
-                }
 
-                // Handle file download
-                const blob = await response.blob();
-                
-                // Get filename from Content-Disposition header if available
-                let filename = 'converted_images.zip';
-                const disposition = response.headers.get('Content-Disposition');
-                if (disposition && disposition.indexOf('attachment') !== -1) {
-                    const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
-                    const matches = filenameRegex.exec(disposition);
-                    if (matches != null && matches[1]) { 
-                        filename = matches[1].replace(/['"]/g, '');
-                    }
+                    const blob = await response.blob();
+                    
+                    let originalName = file.name;
+                    let dotIndex = originalName.lastIndexOf('.');
+                    let baseName = dotIndex !== -1 ? originalName.substring(0, dotIndex) : originalName;
+                    zip.file(`${baseName}.avif`, blob);
+                    
+                    successCount++;
+                    progressBarFill.style.width = `${((i + 1) / selectedFiles.length) * 100}%`;
                 }
-
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.style.display = 'none';
-                a.href = url;
-                a.download = filename;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
                 
-                showMessage('下載成功！', 'success');
+                if (successCount === 0) {
+                    throw new Error('所有檔案轉換均失敗，請確認檔案格式是否正確。');
+                }
+                
+                progressText.innerText = '正在打包 ZIP...';
+                const zipContent = await zip.generateAsync({type: 'blob'});
+                
+                let zipName = zipFileNameInput.value.trim();
+                if (!zipName) {
+                    const date = new Date();
+                    const timestamp = `${date.getFullYear()}${String(date.getMonth()+1).padStart(2,'0')}${String(date.getDate()).padStart(2,'0')}_${String(date.getHours()).padStart(2,'0')}${String(date.getMinutes()).padStart(2,'0')}${String(date.getSeconds()).padStart(2,'0')}`;
+                    zipName = `converted_images_${timestamp}.zip`;
+                } else if (!zipName.toLowerCase().endsWith('.zip')) {
+                    zipName += '.zip';
+                }
+                
+                saveAs(zipContent, zipName);
+                
+                let msg = '下載成功！';
+                if (failCount > 0) msg += ` (有 ${failCount} 個檔案轉換失敗)`;
+                showMessage(msg, 'success');
+                
             } catch (error) {
                 showMessage(`發生錯誤: ${error.message}`, 'error');
             } finally {
                 convertButton.disabled = false;
                 convertButton.innerText = '轉換並下載 ZIP';
+                setTimeout(() => { progressContainer.style.display = 'none'; }, 3000);
             }
         });
 

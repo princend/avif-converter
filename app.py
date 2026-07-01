@@ -77,5 +77,36 @@ def convert():
         download_name=zip_filename
     )
 
+@app.route('/convert_single', methods=['POST'])
+def convert_single():
+    if 'file' not in request.files:
+        return jsonify({'error': '尚未上傳檔案'}), 400
+    
+    file = request.files['file']
+    quality = int(request.form.get('quality', 100))
+    
+    if file.filename == '':
+        return jsonify({'error': '尚未選擇檔案'}), 400
+
+    try:
+        print(f"[DEBUG] Processing single file {file.filename}", flush=True)
+        img = Image.open(file.stream)
+        avif_buffer = io.BytesIO()
+        
+        if img.mode not in ('RGB', 'RGBA'):
+            img = img.convert('RGBA') if 'A' in img.mode else img.convert('RGB')
+            
+        img.save(avif_buffer, format='AVIF', quality=quality, speed=8)
+        avif_buffer.seek(0)
+        
+        return send_file(
+            avif_buffer,
+            mimetype='image/avif'
+        )
+    except Exception as e:
+        print(f"[ERROR] Error processing single image {file.filename}: {e}", flush=True)
+        traceback.print_exc()
+        return jsonify({'error': f'檔案轉換失敗，請確認格式。'}), 500
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
