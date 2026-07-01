@@ -269,7 +269,7 @@
 
         <div class="form-group">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <label style="margin-bottom: 0;">選擇圖片檔案 <span style="color: var(--text-secondary); font-size: 13px; font-weight: normal;">(支援多選，已解除 50MB 限制)</span></label>
+                <label style="margin-bottom: 0;">選擇圖片檔案 <span style="color: var(--text-secondary); font-size: 13px; font-weight: normal;">(支援多選，單張圖片上限 50MB)</span></label>
                 <button type="button" id="clearAllBtn" style="background: none; border: none; color: var(--danger); cursor: pointer; font-size: 13px; font-weight: 500; padding: 0; display: none;">全部清除</button>
             </div>
             <label for="fileInput" class="file-upload-btn" id="dropZone">
@@ -351,9 +351,20 @@
         // 處理拖曳放下的檔案
         dropZone.addEventListener('drop', (e) => {
             const dt = e.dataTransfer;
+            let oversizedCount = 0;
             const newFiles = Array.from(dt.files).filter(file => {
-                return file.type.startsWith('image/') || file.name.match(/\.(jpe?g|png|gif|webp|avif|bmp|heic|tiff?)$/i);
+                const isImage = file.type.startsWith('image/') || file.name.match(/\.(jpe?g|png|gif|webp|avif|bmp|heic|tiff?)$/i);
+                if (isImage && file.size > 50 * 1024 * 1024) {
+                    oversizedCount++;
+                    return false;
+                }
+                return isImage;
             });
+            if (oversizedCount > 0) {
+                showMessage(`已略過 ${oversizedCount} 張超過 50MB 限制的圖片`, 'error');
+            } else if (newFiles.length > 0) {
+                showMessage('', '');
+            }
             if (newFiles.length > 0) {
                 selectedFiles = [...selectedFiles, ...newFiles];
                 renderPreviews();
@@ -361,7 +372,19 @@
         });
 
         fileInput.addEventListener('change', (e) => {
-            const newFiles = Array.from(e.target.files);
+            let oversizedCount = 0;
+            const newFiles = Array.from(e.target.files).filter(file => {
+                if (file.size > 50 * 1024 * 1024) {
+                    oversizedCount++;
+                    return false;
+                }
+                return true;
+            });
+            if (oversizedCount > 0) {
+                showMessage(`已略過 ${oversizedCount} 張超過 50MB 限制的圖片`, 'error');
+            } else if (newFiles.length > 0) {
+                showMessage('', '');
+            }
             if (newFiles.length > 0) {
                 selectedFiles = [...selectedFiles, ...newFiles];
                 renderPreviews();
