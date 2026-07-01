@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>圖片轉 AVIF 工具</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0071e3;
+            --primary-hover: #0077ED;
+            --bg-color: #f5f5f7;
+            --card-bg: rgba(255, 255, 255, 0.8);
+            --text-main: #1d1d1f;
+            --text-secondary: #86868b;
+            --border: #d2d2d7;
+            --danger: #ff3b30;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+            padding: 40px;
+            box-sizing: border-box;
+            border: 1px solid rgba(255,255,255,0.5);
+        }
+
+        h1 {
+            margin-top: 0;
+            font-size: 24px;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 8px;
+            font-size: 15px;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .file-upload-btn {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            background: transparent;
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            color: var(--primary);
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .file-upload-btn:hover {
+            border-color: var(--primary);
+            background: rgba(0, 113, 227, 0.05);
+        }
+
+        .preview-container {
+            min-height: 80px;
+            max-height: 250px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            padding: 16px;
+            border-radius: 12px;
+            background: #fff;
+            margin-bottom: 24px;
+        }
+
+        .image-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .empty-text {
+            color: var(--text-secondary);
+            font-size: 14px;
+            text-align: center;
+            width: 100%;
+            padding: 20px 0;
+        }
+
+        .preview-item {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .preview-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .delete-btn {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--danger);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 6px rgba(255, 59, 48, 0.4);
+            transition: transform 0.2s ease;
+        }
+
+        .delete-btn:hover {
+            transform: scale(1.1);
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            box-sizing: border-box;
+            font-size: 15px;
+            transition: border-color 0.2s ease;
+            outline: none;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--primary);
+        }
+
+        input[type="range"] {
+            width: 100%;
+            accent-color: var(--primary);
+        }
+
+        .submit-btn {
+            display: block;
+            width: 100%;
+            padding: 16px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(0, 113, 227, 0.3);
+        }
+
+        .submit-btn:hover:not(:disabled) {
+            background-color: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(0, 113, 227, 0.4);
+        }
+
+        .submit-btn:disabled {
+            background-color: var(--text-secondary);
+            cursor: not-allowed;
+            box-shadow: none;
+            opacity: 0.7;
+        }
+
+        .status {
+            margin-top: 24px;
+            text-align: center;
+            font-size: 15px;
+            font-weight: 500;
+            min-height: 20px;
+        }
+
+        .status.error { color: var(--danger); }
+        .status.success { color: #34c759; }
+
+        /* Loader */
+        .loader {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>圖片轉 AVIF 工具</h1>
+
+        <div class="form-group">
+            <label>選擇圖片檔案 (支援多選)</label>
+            <label for="fileInput" class="file-upload-btn">
+                點擊或拖曳檔案至此
+            </label>
+            <input type="file" id="fileInput" multiple accept="image/*" />
+        </div>
+
+        <div class="preview-container">
+            <div id="imageList" class="image-list"></div>
+        </div>
+
+        <div class="form-group">
+            <label for="qualityInput">壓縮品質 (0-100): <span id="qualityValue" style="color: var(--primary);">100</span></label>
+            <input type="range" id="qualityInput" min="1" max="100" value="100" oninput="document.getElementById('qualityValue').innerText = this.value" />
+        </div>
+
+        <div class="form-group">
+            <label for="zipFileNameInput">ZIP 檔名 (選填)</label>
+            <input type="text" id="zipFileNameInput" placeholder="留空則自動產生時間戳記 (例如: my_images)" />
+        </div>
+
+        <button id="convertButton" class="submit-btn">轉換並下載 ZIP</button>
+
+        <div id="statusMessage" class="status"></div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const imageList = document.getElementById('imageList');
+        const zipFileNameInput = document.getElementById('zipFileNameInput');
+        const qualityInput = document.getElementById('qualityInput');
+        const convertButton = document.getElementById('convertButton');
+        const statusMessage = document.getElementById('statusMessage');
+
+        let selectedFiles = [];
+
+        fileInput.addEventListener('change', (e) => {
+            const newFiles = Array.from(e.target.files);
+            if (newFiles.length > 0) {
+                selectedFiles = [...selectedFiles, ...newFiles];
+                renderPreviews();
+            }
+            fileInput.value = ''; // Reset input so same file can be selected again
+        });
+
+        function renderPreviews() {
+            imageList.innerHTML = '';
+            
+            if (selectedFiles.length === 0) {
+                imageList.innerHTML = '<div class="empty-text">尚未選擇任何圖片...</div>';
+                return;
+            }
+
+            selectedFiles.forEach((file, index) => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'preview-item';
+
+                const img = document.createElement('img');
+                img.src = URL.createObjectURL(file);
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'delete-btn';
+                deleteBtn.innerHTML = '&times;';
+                
+                deleteBtn.onclick = (e) => {
+                    e.preventDefault();
+                    selectedFiles.splice(index, 1);
+                    renderPreviews();
+                };
+
+                wrapper.appendChild(img);
+                wrapper.appendChild(deleteBtn);
+                imageList.appendChild(wrapper);
+            });
+        }
+
+        convertButton.addEventListener('click', async () => {
+            if (selectedFiles.length === 0) {
+                showMessage('請選擇至少一個檔案。', 'error');
+                return;
+            }
+
+            convertButton.disabled = true;
+            convertButton.innerHTML = '<span class="loader"></span> 處理中...';
+            showMessage('', ''); // Clear message
+
+            const formData = new FormData();
+            selectedFiles.forEach(file => {
+                formData.append('files', file);
+            });
+            formData.append('quality', qualityInput.value);
+            formData.append('zipFilename', zipFileNameInput.value);
+
+            try {
+                const response = await fetch('/convert', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || '轉換失敗');
+                }
+
+                // Handle file download
+                const blob = await response.blob();
+                
+                // Get filename from Content-Disposition header if available
+                let filename = 'converted_images.zip';
+                const disposition = response.headers.get('Content-Disposition');
+                if (disposition && disposition.indexOf('attachment') !== -1) {
+                    const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+                    const matches = filenameRegex.exec(disposition);
+                    if (matches != null && matches[1]) { 
+                        filename = matches[1].replace(/['"]/g, '');
+                    }
+                }
+
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                
+                showMessage('下載成功！', 'success');
+            } catch (error) {
+                showMessage(`發生錯誤: ${error.message}`, 'error');
+            } finally {
+                convertButton.disabled = false;
+                convertButton.innerText = '轉換並下載 ZIP';
+            }
+        });
+
+        function showMessage(text, type) {
+            statusMessage.textContent = text;
+            statusMessage.className = 'status ' + type;
+        }
+
+        // Initial setup
+        renderPreviews();
+    </script>
+</body>
+</html>
