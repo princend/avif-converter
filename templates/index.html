@@ -348,12 +348,17 @@
                 wrapper.appendChild(img);
                 wrapper.appendChild(deleteBtn);
                 imageList.appendChild(wrapper);
-            });
-        }
-
         convertButton.addEventListener('click', async () => {
             if (selectedFiles.length === 0) {
-                showMessage('請選擇至少一個檔案。', 'error');
+                showMessage('請先選擇圖片檔案', 'error');
+                return;
+            }
+
+            // 檢查總容量是否超過 50MB
+            const totalSize = selectedFiles.reduce((sum, file) => sum + file.size, 0);
+            const maxSize = 50 * 1024 * 1024; // 50MB
+            if (totalSize > maxSize) {
+                showMessage(`總容量超過限制！目前大小為 ${(totalSize / 1024 / 1024).toFixed(1)} MB，請刪除部分圖片使其小於 50 MB。`, 'error');
                 return;
             }
 
