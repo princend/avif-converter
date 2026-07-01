@@ -242,7 +242,7 @@
             <label for="fileInput" class="file-upload-btn" id="dropZone">
                 點擊或拖曳檔案至此
             </label>
-            <input type="file" id="fileInput" multiple accept="image/*" />
+            <input type="file" id="fileInput" multiple accept="image/*,.heic,.bmp,.tiff" />
         </div>
 
         <div class="preview-container">
@@ -304,7 +304,9 @@
         // 處理拖曳放下的檔案
         dropZone.addEventListener('drop', (e) => {
             const dt = e.dataTransfer;
-            const newFiles = Array.from(dt.files).filter(file => file.type.startsWith('image/'));
+            const newFiles = Array.from(dt.files).filter(file => {
+                return file.type.startsWith('image/') || file.name.match(/\.(jpe?g|png|gif|webp|avif|bmp|heic|tiff?)$/i);
+            });
             if (newFiles.length > 0) {
                 selectedFiles = [...selectedFiles, ...newFiles];
                 renderPreviews();
@@ -348,6 +350,9 @@
                 wrapper.appendChild(img);
                 wrapper.appendChild(deleteBtn);
                 imageList.appendChild(wrapper);
+            });
+        }
+
         convertButton.addEventListener('click', async () => {
             if (selectedFiles.length === 0) {
                 showMessage('請先選擇圖片檔案', 'error');
