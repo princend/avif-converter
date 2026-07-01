@@ -238,7 +238,10 @@
         <h1>圖片轉 AVIF 工具</h1>
 
         <div class="form-group">
-            <label>選擇圖片檔案 <span style="color: var(--text-secondary); font-size: 13px; font-weight: normal;">(支援多選，總容量上限 50MB)</span></label>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <label style="margin-bottom: 0;">選擇圖片檔案 <span style="color: var(--text-secondary); font-size: 13px; font-weight: normal;">(支援多選，總容量上限 50MB)</span></label>
+                <button type="button" id="clearAllBtn" style="background: none; border: none; color: var(--danger); cursor: pointer; font-size: 13px; font-weight: 500; padding: 0; display: none;">全部清除</button>
+            </div>
             <label for="fileInput" class="file-upload-btn" id="dropZone">
                 點擊或拖曳檔案至此
             </label>
@@ -272,8 +275,15 @@
         const qualityInput = document.getElementById('qualityInput');
         const convertButton = document.getElementById('convertButton');
         const statusMessage = document.getElementById('statusMessage');
+        const clearAllBtn = document.getElementById('clearAllBtn');
 
         let selectedFiles = [];
+
+        clearAllBtn.addEventListener('click', () => {
+            selectedFiles = [];
+            fileInput.value = ''; // Reset input so same file can be selected again
+            renderPreviews();
+        });
 
         // 避免瀏覽器預設的拖曳開啟檔案行為
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
@@ -327,8 +337,11 @@
             
             if (selectedFiles.length === 0) {
                 imageList.innerHTML = '<div class="empty-text">尚未選擇任何圖片...</div>';
+                clearAllBtn.style.display = 'none';
                 return;
             }
+            
+            clearAllBtn.style.display = 'inline-block';
 
             selectedFiles.forEach((file, index) => {
                 const wrapper = document.createElement('div');
