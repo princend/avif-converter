@@ -375,8 +375,14 @@
                 });
 
                 if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || '轉換失敗');
+                    let errorMessage = '轉換失敗';
+                    try {
+                        const errorData = await response.json();
+                        errorMessage = errorData.error || errorMessage;
+                    } catch (e) {
+                        errorMessage = `伺服器超時或發生異常 (${response.status} ${response.statusText})`;
+                    }
+                    throw new Error(errorMessage);
                 }
 
                 // Handle file download

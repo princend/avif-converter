@@ -4,6 +4,8 @@ import zipfile
 import datetime
 import traceback
 import pillow_avif
+from pillow_heif import register_heif_opener
+register_heif_opener()
 from flask import Flask, request, send_file, render_template, jsonify
 from PIL import Image
 
@@ -45,7 +47,7 @@ def convert():
                 img = img.convert('RGBA') if 'A' in img.mode else img.convert('RGB')
                 
             print(f"[DEBUG] Saving as AVIF with quality {quality}", flush=True)
-            img.save(avif_buffer, format='AVIF', quality=quality)
+            img.save(avif_buffer, format='AVIF', quality=quality, speed=8)
             avif_buffer.seek(0)
             
             original_filename = file.filename
