@@ -134,6 +134,22 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
 
+        .file-icon {
+            width: 100%;
+            height: 100%;
+            background-color: #e5e5ea;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            text-transform: uppercase;
+        }
+
         .delete-btn {
             position: absolute;
             top: -6px;
@@ -407,8 +423,17 @@
                 const wrapper = document.createElement('div');
                 wrapper.className = 'preview-item';
 
-                const img = document.createElement('img');
-                img.src = URL.createObjectURL(file);
+                const isUnsupportedPreview = file.name.match(/\.(heic|tiff?)$/i);
+                if (isUnsupportedPreview) {
+                    const icon = document.createElement('div');
+                    icon.className = 'file-icon';
+                    icon.innerText = file.name.split('.').pop().toUpperCase();
+                    wrapper.appendChild(icon);
+                } else {
+                    const img = document.createElement('img');
+                    img.src = URL.createObjectURL(file);
+                    wrapper.appendChild(img);
+                }
 
                 const deleteBtn = document.createElement('button');
                 deleteBtn.className = 'delete-btn';
@@ -420,7 +445,6 @@
                     renderPreviews();
                 };
 
-                wrapper.appendChild(img);
                 wrapper.appendChild(deleteBtn);
                 imageList.appendChild(wrapper);
             });
