@@ -287,7 +287,7 @@
 
         <div class="form-group">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <label style="margin-bottom: 0;">選擇圖片檔案 <span style="color: var(--text-secondary); font-size: 13px; font-weight: normal;">(支援多選，單張圖片上限 50MB)</span></label>
+                <label style="margin-bottom: 0;">選擇圖片檔案 <span id="selectedCount" style="color: var(--primary); font-weight: 600; font-size: 14px; margin-left: 4px;"></span> <span style="color: var(--text-secondary); font-size: 13px; font-weight: normal;">(支援多選，單張圖片上限 50MB)</span></label>
                 <button type="button" id="clearAllBtn" style="background: none; border: none; color: var(--danger); cursor: pointer; font-size: 13px; font-weight: 500; padding: 0; display: none;">全部清除</button>
             </div>
             <label for="fileInput" class="file-upload-btn" id="dropZone">
@@ -412,14 +412,17 @@
 
         function renderPreviews() {
             imageList.innerHTML = '';
+            const countSpan = document.getElementById('selectedCount');
             
             if (selectedFiles.length === 0) {
                 imageList.innerHTML = '<div class="empty-text">尚未選擇任何圖片...</div>';
                 clearAllBtn.style.display = 'none';
+                if (countSpan) countSpan.innerText = '';
                 return;
             }
             
             clearAllBtn.style.display = 'inline-block';
+            if (countSpan) countSpan.innerText = `(已選擇 ${selectedFiles.length} 張)`;
 
             selectedFiles.forEach((file, index) => {
                 const wrapper = document.createElement('div');
