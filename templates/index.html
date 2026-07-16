@@ -227,6 +227,8 @@
             font-size: 15px;
             font-weight: 500;
             min-height: 20px;
+            white-space: pre-wrap;
+            word-break: break-word;
         }
 
         .status.error { color: var(--danger); }
@@ -470,6 +472,7 @@
             const zip = new JSZip();
             let successCount = 0;
             let failCount = 0;
+            let failedFiles = [];
 
             try {
                 for (let i = 0; i < selectedFiles.length; i++) {
@@ -488,6 +491,7 @@
 
                     if (!response.ok) {
                         failCount++;
+                        failedFiles.push(file.name);
                         continue;
                     }
 
@@ -521,7 +525,9 @@
                 saveAs(zipContent, zipName);
                 
                 let msg = '下載成功！';
-                if (failCount > 0) msg += ` (有 ${failCount} 個檔案轉換失敗)`;
+                if (failCount > 0) {
+                    msg += `\n(有 ${failCount} 個檔案轉換失敗：${failedFiles.join(', ')})`;
+                }
                 showMessage(msg, 'success');
                 
             } catch (error) {
